@@ -1,0 +1,309 @@
+import tkinter as tk
+from tkinter import ttk
+
+#                   VARIABLES
+USUARIO_CORRECTO = "admin"
+CONTRA_CORRECTA = "1234"
+
+
+#               Ventana Principal
+ventana = tk.Tk()
+ventana.title("MINDMO")
+ventana.geometry("1000x600+450+200")
+ventana.iconbitmap("MINDMO/iconoV.ico")
+ventana.config(bg="#1a102c")
+ventana.resizable(False, False)
+
+
+#               FRAME del logo
+framelogo = tk.Frame(ventana, bg="#1a102c")
+framelogo.pack(fill="both", expand=True)
+
+titulo = tk.Label(
+    framelogo,
+    text="MINDMO",
+    fg="white",
+    bg="#1a102c",
+    font=("Tahoma", 50, "bold")
+)
+titulo.pack(expand=True)
+
+
+#                       FRAME LOGIN
+framelogin = tk.Frame(ventana)
+
+
+#                      FUNCIONES PLACEHOLDER
+def placeholder_on(entry, texto, es_password=False):
+    entry.insert(0, texto)
+    entry.config(fg="gray")
+    if es_password:
+        entry.config(show="")
+
+def focus_in(entry, texto, es_password=False):
+    if entry.get() == texto:
+        entry.delete(0, "end")
+        entry.config(fg="black")
+        if es_password:
+            entry.config(show="*")
+
+def focus_out(entry, texto, es_password=False):
+    if entry.get() == "":
+        entry.insert(0, texto)
+        entry.config(fg="gray")
+        if es_password:
+            entry.config(show="")
+
+
+#                   FUNCION DEGRADADO 
+def degradado(canvas, color1, color2, width, height):
+    r1,g1,b1 = ventana.winfo_rgb(color1)
+    r2,g2,b2 = ventana.winfo_rgb(color2)
+
+    r_ratio = (r2 - r1) / height
+    g_ratio = (g2 - g1) / height
+    b_ratio = (b2 - b1) / height
+
+    for i in range(height):
+        nr = int(r1 + (r_ratio * i))
+        ng = int(g1 + (g_ratio * i))
+        nb = int(b1 + (b_ratio * i))
+        color = f'#{nr>>8:02x}{ng>>8:02x}{nb>>8:02x}'
+        canvas.create_line(0, i, width, i, fill=color)
+
+
+# ////          LADO IZQUIERDO
+lado_izquierdo = tk.Canvas(framelogin, width=650, height=600, highlightthickness=0)
+lado_izquierdo.pack(side="left", fill="both", expand=True)
+
+degradado(lado_izquierdo, "#1a102c", "#3a1c71", 650, 600)
+
+lado_izquierdo.create_text(
+    40, 40,
+    text="MINDMO",
+    fill="white",
+    font=("Tahoma", 36, "bold"),
+    anchor="nw"
+)
+
+lado_izquierdo.create_text(
+    40, 560,
+    text="Mejora la forma en la que ves\ntu contenido de forma simple",
+    fill="white",
+    font=("Arial", 16),
+    anchor="sw"
+)
+
+# ////          LADO DERECHO
+lado_derecho = tk.Frame(framelogin, bg="white", width=350)
+lado_derecho.pack(side="right", fill="both")
+lado_derecho.pack_propagate(False)
+
+titulologin = tk.Label(
+    lado_derecho,
+    text="Iniciar sesión",
+    font=("Arial", 22, "bold"),
+    fg="#1a102c",
+    bg="white"
+)
+titulologin.place(relx=0.5, rely=0.15, anchor="center")
+
+contenedorinputs = tk.Frame(lado_derecho, bg="white")
+contenedorinputs.place(relx=0.5, rely=0.6, anchor="center")
+
+#Entrada usuario
+entusuario = tk.Entry(
+    contenedorinputs,
+    font=("Arial", 14),
+    relief="flat",
+    highlightthickness=1,
+    highlightbackground="#ccc",
+    highlightcolor="#1a102c",
+    width=22
+)
+entusuario.pack(pady=10)
+
+placeholder_on(entusuario, "Usuario")
+
+entusuario.bind("<FocusIn>", lambda e: focus_in(entusuario, "Usuario"))
+entusuario.bind("<FocusOut>", lambda e: focus_out(entusuario, "Usuario"))
+
+# Entrada contraseña
+entcontra = tk.Entry(
+    contenedorinputs,
+    font=("Arial", 14),
+    relief="flat",
+    highlightthickness=1,
+    highlightbackground="#ccc",
+    highlightcolor="#1a102c",
+    width=22
+)
+entcontra.pack(pady=10)
+
+placeholder_on(entcontra, "Contraseña", es_password=True)
+
+entcontra.bind("<FocusIn>", lambda e: focus_in(entcontra, "Contraseña", True))
+entcontra.bind("<FocusOut>", lambda e: focus_out(entcontra, "Contraseña", True))
+
+error_login = tk.Label(contenedorinputs, text="", fg="red", bg="white")
+error_login.pack()
+
+botonlog = tk.Button(
+    contenedorinputs,
+    text="Login",
+    font=("Arial", 14),
+    bg="#1a102c",
+    fg="white",
+    width=18,
+    bd=0,
+    cursor="hand2",
+    command=lambda: login()
+)
+botonlog.pack(pady=(20, 10))
+
+botonreg = tk.Button(
+    contenedorinputs,
+    text="Registrarse",
+    font=("Arial", 12),
+    fg="#1a102c",
+    bg="white",
+    bd=0,
+    cursor="hand2",
+    command=lambda: mostrarframe("registro")
+)
+botonreg.pack()
+
+
+#                       FRAME REGISTRO 
+
+from tkinter import filedialog
+from PIL import Image, ImageTk
+
+frameregistro = tk.Frame(ventana)
+
+# Canvas para degradado igual que el login
+canvas_registro = tk.Canvas(frameregistro, width=1000, height=600, highlightthickness=0)
+canvas_registro.pack(fill="both", expand=True)
+
+degradado(canvas_registro, "#371666", "#1e0e3d", 1000, 600)
+
+# Contenedor principal se puede mover libremente
+contenedor_reg = tk.Frame(canvas_registro, bg="white")
+canvas_registro.create_window(500, 300, window=contenedor_reg, width=420, height=480)
+
+
+# ---------- TITULO ----------
+tk.Label(
+    contenedor_reg,
+    text="Crear cuenta",
+    font=("Arial", 24, "bold"),
+    bg="white",
+    fg="#1a102c"
+).place(x=120, y=20)
+
+
+# ---------- FOTO de PERFIL ----------
+foto_default = Image.new("RGB", (100,100), "#cccccc")
+foto_tk = ImageTk.PhotoImage(foto_default)
+
+lbl_foto = tk.Label(contenedor_reg, image=foto_tk, bg="white")
+lbl_foto.image = foto_tk
+lbl_foto.place(x=160, y=70)
+
+def elegir_foto():
+    ruta = filedialog.askopenfilename(
+        filetypes=[("Imagenes", "*.png *.jpg *.jpeg")]
+    )
+    if ruta:
+        img = Image.open(ruta).resize((100,100))
+        img_tk = ImageTk.PhotoImage(img)
+        lbl_foto.config(image=img_tk)
+        lbl_foto.image = img_tk
+
+tk.Button(
+    contenedor_reg,
+    text="Elegir icono",
+    bg="white",
+    fg="#1a102c",
+    bd=0,
+    cursor="hand2",
+    command=elegir_foto
+).place(x=160, y=180)
+
+
+# ---------- FUNCION de los campos ----------
+def campo_registro(y, texto, password=False):
+    e = tk.Entry(
+        contenedor_reg,
+        font=("Arial", 14),
+        width=28,
+        relief="flat",
+        highlightthickness=1,
+        highlightbackground="#ccc",
+        highlightcolor="#1a102c"
+    )
+    e.place(x=60, y=y, height=38)
+    placeholder_on(e, texto, password)
+    e.bind("<FocusIn>", lambda ev: focus_in(e, texto, password))
+    e.bind("<FocusOut>", lambda ev: focus_out(e, texto, password))
+    return e
+
+# ---------- CAMPOS ----------
+ent_nombre_reg = campo_registro(230, "Nombre completo")
+ent_correo_reg = campo_registro(280, "Correo electrónico")
+ent_usuario_reg = campo_registro(330, "Nombre de usuario")
+ent_contra_reg = campo_registro(380, "Contraseña", True)
+
+# ---------- BOTON ----------
+tk.Button(
+    contenedor_reg,
+    text="Guardar y continuar",
+    font=("Arial", 14),
+    bg="#1a102c",
+    fg="white",
+    width=22,
+    bd=0,
+    cursor="hand2",
+    command=lambda: mostrarframe("menu")
+).place(x=90, y=430)
+
+
+#                   FRAME MENU
+framemenu = tk.Frame(ventana, bg="#1a102c")
+
+tk.Label(
+    framemenu,
+    text="Menú Principal",
+    font=("Arial", 30, "bold"),
+    fg="white",
+    bg="#1a102c"
+).pack(expand=True)
+
+
+#               CONTROL DE FRAMES
+frames = {
+    "logo": framelogo,
+    "login": framelogin,
+    "registro": frameregistro,
+    "menu": framemenu
+}
+
+def mostrarframe(nombre):
+    for frame in frames.values():
+        frame.pack_forget()
+    frames[nombre].pack(fill="both", expand=True)
+
+def login():
+    if entusuario.get() == USUARIO_CORRECTO and entcontra.get() == CONTRA_CORRECTA:
+        mostrarframe("menu")
+    else:
+        error_login.config(text="Usuario o contraseña incorrecta")
+
+
+#                CAMBIO DE LOGO
+def cambiar_pantalla():
+    mostrarframe("login")
+
+ventana.after(3000, cambiar_pantalla)
+
+ventana.mainloop()
