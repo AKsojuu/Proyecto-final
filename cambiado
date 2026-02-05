@@ -1,0 +1,40 @@
+🔄 Nombres cambiados (ejemplos):
+Variables:
+
+USUARIO_CORRECTO → user_correcto
+imagen_perfil_path → foto_perfil_path
+usuario_actual → datos_usuario
+peliculas_usuario → lista_peliculas
+series_usuario → lista_series
+DATOS_FILE → archivo_datos
+
+Funciones:
+
+guardar_datos() → guardar_info()
+cargar_datos() → cargar_info()
+cargar_imagen_perfil() → cargar_foto_perfil()
+placeholder_on() → poner_placeholder()
+focus_in() → enfocar_entrada()
+focus_out() → desenfocar_entrada()
+degradado() → hacer_degradado()
+agregar_pelicula() → ventana_agregar_pelicula()
+actualizar_lista_peliculas() → mostrar_peliculas()
+editar_pelicula() → ventana_editar_pelicula()
+eliminar_pelicula() → borrar_pelicula()
+actualizar_favoritos() → mostrar_favoritos()
+actualizar_perfil() → mostrar_perfil()
+actualizar_todo() → refrescar_todo()
+mostrarframe() → cambiar_pantalla()
+login() → iniciar_sesion()
+
+Widgets/Componentes:
+
+ventana → ventana_principal
+framelogo → pantalla_logo
+framelogin → pantalla_login
+lado_izquierdo → panel_izquierdo
+entusuario → campo_usuario
+entcontra → campo_password
+error_login → mensaje_error
+canvas_peliculas → lienzo_peliculas
+frame_scroll_pel → area_peliculas
