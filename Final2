@@ -1,0 +1,1493 @@
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox, simpledialog
+from PIL import Image, ImageTk, ImageDraw
+import json
+import os
+
+#                   VARIABLES GLOBALES
+user_correcto = "admin"
+password_correcta = "1234"
+
+# Variable para la imagen de perfil
+foto_perfil_path = None
+foto_perfil_tk = None
+
+# Datos del usuario
+datos_usuario = {
+    "nombre": "",
+    "usuario": "",
+    "imagen": None
+}
+
+# Listas del usuario (inicialmente vacías)
+lista_peliculas = []
+lista_series = []
+
+# Archivo para guardar datos
+archivo_datos = "mindmo_datos.json"
+
+def guardar_info():
+    """Guarda los datos del usuario en un archivo JSON"""
+    info = {
+        "usuario": datos_usuario,
+        "peliculas": lista_peliculas,
+        "series": lista_series,
+        "imagen_path": foto_perfil_path
+    }
+    try:
+        with open(archivo_datos, 'w', encoding='utf-8') as f:
+            json.dump(info, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Error guardando datos: {e}")
+
+def cargar_info():
+    """Carga los datos guardados del usuario"""
+    global lista_peliculas, lista_series, foto_perfil_path, foto_perfil_tk
+    
+    if os.path.exists(archivo_datos):
+        try:
+            with open(archivo_datos, 'r', encoding='utf-8') as f:
+                info = json.load(f)
+                
+            if "usuario" in info:
+                datos_usuario.update(info["usuario"])
+            if "peliculas" in info:
+                lista_peliculas = info["peliculas"]
+            if "series" in info:
+                lista_series = info["series"]
+            if "imagen_path" in info and info["imagen_path"]:
+                foto_perfil_path = info["imagen_path"]
+                cargar_foto_perfil(foto_perfil_path)
+                
+        except Exception as e:
+            print(f"Error cargando datos: {e}")
+
+def cargar_foto_perfil(ruta):
+    """Carga la imagen de perfil desde un archivo"""
+    global foto_perfil_tk
+    
+    if ruta and os.path.exists(ruta):
+        try:
+            img = Image.open(ruta)
+            img = img.resize((120, 120), Image.Resampling.LANCZOS)
+            
+            # Crear imagen circular
+            mascara = Image.new('L', (120, 120), 0)
+            dibujo = ImageDraw.Draw(mascara)
+            dibujo.ellipse((0, 0, 120, 120), fill=255)
+            
+            resultado = Image.new('RGBA', (120, 120), (0, 0, 0, 0))
+            resultado.paste(img, (0, 0))
+            resultado.putalpha(mascara)
+            
+            foto_perfil_tk = ImageTk.PhotoImage(resultado)
+        except:
+            pass
+
+#               Ventana Principal
+ventana_principal = tk.Tk()
+ventana_principal.title("MINDMO")
+ventana_principal.geometry("1000x600")
+try:
+    ventana_principal.iconbitmap("MINDMO/iconoV.ico")
+except:
+    pass
+ventana_principal.config(bg="#1a102c")
+ventana_principal.resizable(False, False)
+
+# Centrar ventana
+ventana_principal.update_idletasks()
+ancho = ventana_principal.winfo_width()
+alto = ventana_principal.winfo_height()
+pos_x = (ventana_principal.winfo_screenwidth() // 2) - (ancho // 2)
+pos_y = (ventana_principal.winfo_screenheight() // 2) - (alto // 2)
+ventana_principal.geometry(f'{ancho}x{alto}+{pos_x}+{pos_y}')
+
+
+#               FRAME del logo (SPLASH)
+pantalla_logo = tk.Frame(ventana_principal, bg="#1a102c")
+pantalla_logo.pack(fill="both", expand=True)
+
+etiqueta_titulo = tk.Label(
+    pantalla_logo,
+    text="MINDMO",
+    fg="white",
+    bg="#1a102c",
+    font=("Tahoma", 50, "bold")
+)
+etiqueta_titulo.pack(expand=True)
+
+
+#                       FRAME LOGIN
+pantalla_login = tk.Frame(ventana_principal)
+
+
+#                      FUNCIONES PLACEHOLDER
+def poner_placeholder(entrada, texto_placeholder, es_pass=False):
+    entrada.insert(0, texto_placeholder)
+    entrada.config(fg="gray")
+    if es_pass:
+        entrada.config(show="")
+
+def enfocar_entrada(entrada, texto_placeholder, es_pass=False):
+    if entrada.get() == texto_placeholder:
+        entrada.delete(0, "end")
+        entrada.config(fg="black")
+        if es_pass:
+            entrada.config(show="*")
+
+def desenfocar_entrada(entrada, texto_placeholder, es_pass=False):
+    if entrada.get() == "":
+        entrada.insert(0, texto_placeholder)
+        entrada.config(fg="gray")
+        if es_pass:
+            entrada.config(show="")
+
+
+#                   FUNCION DEGRADADO 
+def hacer_degradado(lienzo, color_inicial, color_final, ancho_canvas, alto_canvas):
+    r1,g1,b1 = ventana_principal.winfo_rgb(color_inicial)
+    r2,g2,b2 = ventana_principal.winfo_rgb(color_final)
+
+    proporcion_r = (r2 - r1) / alto_canvas
+    proporcion_g = (g2 - g1) / alto_canvas
+    proporcion_b = (b2 - b1) / alto_canvas
+
+    for i in range(alto_canvas):
+        nuevo_r = int(r1 + (proporcion_r * i))
+        nuevo_g = int(g1 + (proporcion_g * i))
+        nuevo_b = int(b1 + (proporcion_b * i))
+        color_actual = f'#{nuevo_r>>8:02x}{nuevo_g>>8:02x}{nuevo_b>>8:02x}'
+        lienzo.create_line(0, i, ancho_canvas, i, fill=color_actual)
+
+
+# ////          LADO IZQUIERDO
+panel_izquierdo = tk.Canvas(pantalla_login, width=650, height=600, highlightthickness=0)
+panel_izquierdo.pack(side="left", fill="both", expand=True)
+
+hacer_degradado(panel_izquierdo, "#110924", "#2a1357", 650, 600)
+
+panel_izquierdo.create_text(
+    40, 40,
+    text="MINDMO",
+    fill="white",
+    font=("Tahoma", 36, "bold"),
+    anchor="nw"
+)
+
+panel_izquierdo.create_text(
+    40, 560,
+    text="Mejora la forma en la que ves\ntu contenido de forma simple",
+    fill="white",
+    font=("Arial", 16),
+    anchor="sw"
+)
+
+# ////          LADO DERECHO
+panel_derecho = tk.Frame(pantalla_login, bg="white", width=350)
+panel_derecho.pack(side="right", fill="both")
+panel_derecho.pack_propagate(False)
+
+texto_login = tk.Label(
+    panel_derecho,
+    text="Iniciar sesión",
+    font=("Arial", 22, "bold"),
+    fg="#1a102c",
+    bg="white"
+)
+texto_login.place(relx=0.5, rely=0.15, anchor="center")
+
+caja_inputs = tk.Frame(panel_derecho, bg="white")
+caja_inputs.place(relx=0.5, rely=0.6, anchor="center")
+
+# Entrada usuario
+campo_usuario = tk.Entry(
+    caja_inputs,
+    font=("Arial", 14),
+    relief="flat",
+    highlightthickness=1,
+    highlightbackground="#ccc",
+    highlightcolor="#1a102c",
+    width=22
+)
+campo_usuario.pack(pady=10)
+
+poner_placeholder(campo_usuario, "Usuario")
+
+campo_usuario.bind("<FocusIn>", lambda e: enfocar_entrada(campo_usuario, "Usuario"))
+campo_usuario.bind("<FocusOut>", lambda e: desenfocar_entrada(campo_usuario, "Usuario"))
+
+# Entrada contraseña
+campo_password = tk.Entry(
+    caja_inputs,
+    font=("Arial", 14),
+    relief="flat",
+    highlightthickness=1,
+    highlightbackground="#ccc",
+    highlightcolor="#1a102c",
+    width=22
+)
+campo_password.pack(pady=10)
+
+poner_placeholder(campo_password, "Contraseña", es_pass=True)
+
+campo_password.bind("<FocusIn>", lambda e: enfocar_entrada(campo_password, "Contraseña", True))
+campo_password.bind("<FocusOut>", lambda e: desenfocar_entrada(campo_password, "Contraseña", True))
+
+mensaje_error = tk.Label(caja_inputs, text="", fg="red", bg="white")
+mensaje_error.pack()
+
+boton_entrar = tk.Button(
+    caja_inputs,
+    text="Login",
+    font=("Arial", 14),
+    bg="#1a102c",
+    fg="white",
+    width=18,
+    bd=0,
+    cursor="hand2",
+    command=lambda: iniciar_sesion()
+)
+boton_entrar.pack(pady=(20, 10))
+
+boton_registrar = tk.Button(
+    caja_inputs,
+    text="Registrarse",
+    font=("Arial", 12),
+    fg="#1a102c",
+    bg="white",
+    bd=0,
+    cursor="hand2",
+    command=lambda: cambiar_pantalla("registro")
+)
+boton_registrar.pack()
+
+
+#                       FRAME REGISTRO 
+
+pantalla_registro = tk.Frame(ventana_principal)
+
+lienzo_registro = tk.Canvas(pantalla_registro, width=1000, height=600, highlightthickness=0)
+lienzo_registro.pack(fill="both", expand=True)
+
+hacer_degradado(lienzo_registro, "#371666", "#1e0e3d", 1000, 600)
+
+caja_registro = tk.Frame(lienzo_registro, bg="#FFFFFF")
+lienzo_registro.create_window(500, 300, window=caja_registro, width=430, height=600)
+
+tk.Label(
+    caja_registro,
+    text="Crear cuenta",
+    font=("Arial", 24, "bold"),
+    bg="white",
+    fg="#1a102c"
+).place(x=120, y=20)
+
+tk.Button(
+    caja_registro,
+    text="← Volver",
+    font=("Arial", 11),
+    bg="white",
+    fg="#1a102c",
+    bd=0,
+    cursor="hand2",
+    command=lambda: cambiar_pantalla("login")
+).place(x=20, y=20)
+
+# Foto de perfil
+cuadro_foto = tk.Frame(caja_registro, bg="#b8b7b7", width=100, height=100)
+cuadro_foto.place(x=160, y=70)
+
+etiqueta_iniciales = tk.Label(
+    cuadro_foto,
+    text="",
+    font=("Arial", 36, "bold"),
+    fg="white",
+    bg="#b8b7b7"
+)
+etiqueta_iniciales.place(relx=0.5, rely=0.5, anchor="center")
+
+def seleccionar_foto():
+    global foto_perfil_path, foto_perfil_tk
+    
+    ruta_archivo = filedialog.askopenfilename(
+        title="Selecciona una imagen de perfil",
+        filetypes=[("Archivos de imagen", "*.png *.jpg *.jpeg *.gif *.bmp")]
+    )
+    
+    if ruta_archivo:
+        try:
+            imagen = Image.open(ruta_archivo)
+            imagen = imagen.resize((100, 100), Image.Resampling.LANCZOS)
+            
+            mascara = Image.new('L', (100, 100), 0)
+            dibujo = ImageDraw.Draw(mascara)
+            dibujo.ellipse((0, 0, 100, 100), fill=255)
+            
+            salida = Image.new('RGBA', (100, 100), (0, 0, 0, 0))
+            salida.paste(imagen, (0, 0))
+            salida.putalpha(mascara)
+            
+            foto_perfil_tk = ImageTk.PhotoImage(salida)
+            foto_perfil_path = ruta_archivo
+            
+            etiqueta_iniciales.config(image=foto_perfil_tk, bg="white", text="")
+            etiqueta_iniciales.image = foto_perfil_tk
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo cargar la imagen: {str(e)}")
+
+tk.Button(
+    caja_registro,
+    text="Elegir icono",
+    bg="white",
+    fg="#1a102c",
+    bd=0,
+    cursor="hand2",
+    command=seleccionar_foto
+).place(x=175, y=180)
+
+def crear_campo(posicion_y, texto_ph, es_password=False):
+    entrada = tk.Entry(
+        caja_registro,
+        font=("Arial", 14),
+        width=28,
+        relief="flat",
+        highlightthickness=1,
+        highlightbackground="#ccc",
+        highlightcolor="#1a102c"
+    )
+    entrada.place(x=60, y=posicion_y, height=38)
+    poner_placeholder(entrada, texto_ph, es_password)
+    entrada.bind("<FocusIn>", lambda ev: enfocar_entrada(entrada, texto_ph, es_password))
+    entrada.bind("<FocusOut>", lambda ev: desenfocar_entrada(entrada, texto_ph, es_password))
+    return entrada
+
+entrada_nombre = crear_campo(230, "Nombre completo")
+entrada_correo = crear_campo(280, "Correo electrónico")
+entrada_user = crear_campo(330, "Nombre de usuario")
+entrada_pass = crear_campo(380, "Contraseña", True)
+
+def guardar_nuevo_usuario():
+    global lista_peliculas, lista_series
+    
+    nombre = entrada_nombre.get()
+    if nombre and nombre != "Nombre completo":
+        datos_usuario["nombre"] = nombre
+    else:
+        datos_usuario["nombre"] = "Usuario"
+    
+    usuario = entrada_user.get()
+    if usuario and usuario != "Nombre de usuario":
+        datos_usuario["usuario"] = usuario
+    else:
+        datos_usuario["usuario"] = "user"
+    
+    # Reiniciar listas (nuevo usuario empieza con listas vacías)
+    lista_peliculas = []
+    lista_series = []
+    
+    guardar_info()
+    refrescar_todo()
+    cambiar_pantalla("menu")
+
+tk.Button(
+    caja_registro,
+    text="Guardar y continuar",
+    font=("Arial", 14),
+    bg="#1a102c",
+    fg="white",
+    width=22,
+    bd=0,
+    cursor="hand2",
+    command=guardar_nuevo_usuario
+).place(x=90, y=470)
+
+
+#                   FRAME MENU (CON SCROLL)
+pantalla_menu = tk.Frame(ventana_principal)
+
+fondo_menu = tk.Canvas(pantalla_menu, width=1000, height=600, highlightthickness=0)
+fondo_menu.pack(fill="both", expand=True)
+hacer_degradado(fondo_menu, "#110924", "#2a1357", 1000, 600)
+
+# Header fijo
+barra_superior_menu = tk.Frame(fondo_menu, bg="#110924", height=70)
+fondo_menu.create_window(0, 0, window=barra_superior_menu, anchor="nw", width=1000)
+
+tk.Label(
+    barra_superior_menu,
+    text="MINDMO",
+    font=("Tahoma", 22, "bold"),
+    fg="white",
+    bg="#110924"
+).place(x=30, y=20)
+
+caja_usuario_arriba = tk.Frame(barra_superior_menu, bg="#110924")
+caja_usuario_arriba.place(x=820, y=15)
+
+texto_nombre_usuario = tk.Label(
+    caja_usuario_arriba,
+    text="Usuario",
+    font=("Arial", 11, "bold"),
+    fg="white",
+    bg="#110924"
+)
+texto_nombre_usuario.pack(anchor="e")
+
+boton_ver_perfil = tk.Button(
+    caja_usuario_arriba,
+    text="Ver perfil",
+    font=("Arial", 9),
+    fg="#a89edb",
+    bg="#110924",
+    bd=0,
+    cursor="hand2",
+    activebackground="#110924",
+    activeforeground="#c5b9f0",
+    command=lambda: [mostrar_perfil(), cambiar_pantalla("perfil")]
+)
+boton_ver_perfil.pack(anchor="e")
+
+# Área scrolleable del menú
+contenedor_scroll_menu = tk.Frame(fondo_menu, bg="#110924")
+fondo_menu.create_window(0, 70, window=contenedor_scroll_menu, anchor="nw", width=1000, height=530)
+
+lienzo_scroll_menu = tk.Canvas(contenedor_scroll_menu, bg="#110924", highlightthickness=0)
+barra_scroll_menu = ttk.Scrollbar(contenedor_scroll_menu, orient="vertical", command=lienzo_scroll_menu.yview)
+area_contenido_menu = tk.Frame(lienzo_scroll_menu, bg="#110924")
+
+area_contenido_menu.bind("<Configure>", lambda e: lienzo_scroll_menu.configure(scrollregion=lienzo_scroll_menu.bbox("all")))
+
+lienzo_scroll_menu.create_window((0, 0), window=area_contenido_menu, anchor="nw")
+lienzo_scroll_menu.configure(yscrollcommand=barra_scroll_menu.set)
+
+lienzo_scroll_menu.pack(side="left", fill="both", expand=True)
+barra_scroll_menu.pack(side="right", fill="y")
+
+def hacer_scroll_menu(evento):
+    lienzo_scroll_menu.yview_scroll(int(-1*(evento.delta/120)), "units")
+
+lienzo_scroll_menu.bind_all("<MouseWheel>", hacer_scroll_menu)
+
+# Contenido del menú
+def crear_boton_seccion(texto_seccion, funcion_accion, fila):
+    cuadro_seccion = tk.Frame(area_contenido_menu, bg="#2a1357", height=100)
+    cuadro_seccion.grid(row=fila, column=0, sticky="ew", pady=15, padx=40)
+    cuadro_seccion.grid_propagate(False)
+    
+    tk.Label(
+        cuadro_seccion,
+        text=texto_seccion,
+        font=("Segoe UI", 24, "bold"),
+        fg="white",
+        bg="#2a1357"
+    ).pack(side="left", padx=30, pady=30)
+    
+    tk.Button(
+        cuadro_seccion,
+        text="ABRIR →",
+        font=("Arial", 12, "bold"),
+        bg="#5a3d8a",
+        fg="white",
+        bd=0,
+        cursor="hand2",
+        padx=20,
+        pady=8,
+        activebackground="#7a5daa",
+        command=funcion_accion
+    ).pack(side="right", padx=30)
+
+area_contenido_menu.grid_columnconfigure(0, weight=1)
+
+# Espaciado inicial
+tk.Label(area_contenido_menu, text="", bg="#110924", height=1).grid(row=0, column=0)
+
+crear_boton_seccion("Mis Películas", lambda: [mostrar_peliculas(), cambiar_pantalla("peliculas")], 1)
+crear_boton_seccion("Mis Series", lambda: [mostrar_series(), cambiar_pantalla("series")], 2)
+crear_boton_seccion("Mis Favoritos", lambda: [mostrar_favoritos(), cambiar_pantalla("favoritos")], 3)
+
+# Estadísticas rápidas
+tk.Label(area_contenido_menu, text="Estadísticas", font=("Segoe UI", 20, "bold"),
+         fg="white", bg="#110924").grid(row=4, column=0, pady=(30, 10))
+
+caja_estadisticas = tk.Frame(area_contenido_menu, bg="#110924")
+caja_estadisticas.grid(row=5, column=0, pady=10)
+
+def crear_cuadro_stat(padre, titulo_stat, numero, columna):
+    cuadro = tk.Frame(padre, bg="#2a1357", width=200, height=80, bd=1, relief="solid")
+    cuadro.grid(row=0, column=columna, padx=10)
+    cuadro.pack_propagate(False)
+    
+    tk.Label(cuadro, text=str(numero), font=("Arial", 28, "bold"), fg="#00ff88", bg="#2a1357").pack(pady=5)
+    tk.Label(cuadro, text=titulo_stat, font=("Arial", 10), fg="white", bg="#2a1357").pack()
+
+# Espaciado final
+tk.Label(area_contenido_menu, text="", bg="#110924", height=2).grid(row=6, column=0)
+
+
+#                   FRAME PELÍCULAS (CON SCROLL MEJORADO)
+pantalla_peliculas = tk.Frame(ventana_principal)
+
+fondo_peliculas = tk.Canvas(pantalla_peliculas, width=1000, height=600, highlightthickness=0)
+fondo_peliculas.pack(fill="both", expand=True)
+hacer_degradado(fondo_peliculas, "#110924", "#2a1357", 1000, 600)
+
+# Header fijo
+barra_sup_peliculas = tk.Frame(fondo_peliculas, bg="#110924", height=80)
+fondo_peliculas.create_window(0, 0, window=barra_sup_peliculas, anchor="nw", width=1000)
+
+tk.Button(
+    barra_sup_peliculas,
+    text="← Volver",
+    font=("Arial", 11),
+    bg="#5a3d8a",
+    fg="white",
+    bd=0,
+    cursor="hand2",
+    padx=15,
+    pady=6,
+    command=lambda: cambiar_pantalla("menu")
+).place(x=30, y=15)
+
+tk.Label(
+    barra_sup_peliculas,
+    text="Mis Películas",
+    font=("Segoe UI", 26, "bold"),
+    fg="white",
+    bg="#110924"
+).place(x=30, y=45)
+
+boton_nueva_pelicula = tk.Button(
+    barra_sup_peliculas,
+    text="+ Agregar Película",
+    font=("Arial", 12, "bold"),
+    bg="#00ff88",
+    fg="#1a102c",
+    bd=0,
+    cursor="hand2",
+    padx=20,
+    pady=8,
+    command=lambda: ventana_agregar_pelicula()
+)
+boton_nueva_pelicula.place(x=790, y=25)
+
+# Área scrolleable
+contenedor_scroll_pel = tk.Frame(fondo_peliculas, bg="#110924")
+fondo_peliculas.create_window(0, 80, window=contenedor_scroll_pel, anchor="nw", width=1000, height=520)
+
+lienzo_peliculas = tk.Canvas(contenedor_scroll_pel, bg="#110924", highlightthickness=0)
+barra_peliculas = ttk.Scrollbar(contenedor_scroll_pel, orient="vertical", command=lienzo_peliculas.yview)
+area_peliculas = tk.Frame(lienzo_peliculas, bg="#110924")
+
+area_peliculas.bind("<Configure>", lambda e: lienzo_peliculas.configure(scrollregion=lienzo_peliculas.bbox("all")))
+
+lienzo_peliculas.create_window((0, 0), window=area_peliculas, anchor="nw")
+lienzo_peliculas.configure(yscrollcommand=barra_peliculas.set)
+
+lienzo_peliculas.pack(side="left", fill="both", expand=True)
+barra_peliculas.pack(side="right", fill="y")
+
+def hacer_scroll_peliculas(evento):
+    lienzo_peliculas.yview_scroll(int(-1*(evento.delta/120)), "units")
+
+contenedor_scroll_pel.bind("<Enter>", lambda e: lienzo_peliculas.bind_all("<MouseWheel>", hacer_scroll_peliculas))
+contenedor_scroll_pel.bind("<Leave>", lambda e: lienzo_peliculas.unbind_all("<MouseWheel>"))
+
+
+#                   FRAME SERIES (CON SCROLL MEJORADO)
+pantalla_series = tk.Frame(ventana_principal)
+
+fondo_series = tk.Canvas(pantalla_series, width=1000, height=600, highlightthickness=0)
+fondo_series.pack(fill="both", expand=True)
+hacer_degradado(fondo_series, "#110924", "#2a1357", 1000, 600)
+
+barra_sup_series = tk.Frame(fondo_series, bg="#110924", height=80)
+fondo_series.create_window(0, 0, window=barra_sup_series, anchor="nw", width=1000)
+
+tk.Button(
+    barra_sup_series,
+    text="← Volver",
+    font=("Arial", 11),
+    bg="#5a3d8a",
+    fg="white",
+    bd=0,
+    cursor="hand2",
+    padx=15,
+    pady=6,
+    command=lambda: cambiar_pantalla("menu")
+).place(x=30, y=15)
+
+tk.Label(
+    barra_sup_series,
+    text="Mis Series",
+    font=("Segoe UI", 26, "bold"),
+    fg="white",
+    bg="#110924"
+).place(x=30, y=45)
+
+boton_nueva_serie = tk.Button(
+    barra_sup_series,
+    text="+ Agregar Serie",
+    font=("Arial", 12, "bold"),
+    bg="#00ff88",
+    fg="#1a102c",
+    bd=0,
+    cursor="hand2",
+    padx=20,
+    pady=8,
+    command=lambda: ventana_agregar_serie()
+)
+boton_nueva_serie.place(x=810, y=25)
+
+contenedor_scroll_ser = tk.Frame(fondo_series, bg="#110924")
+fondo_series.create_window(0, 80, window=contenedor_scroll_ser, anchor="nw", width=1000, height=520)
+
+lienzo_series = tk.Canvas(contenedor_scroll_ser, bg="#110924", highlightthickness=0)
+barra_series = ttk.Scrollbar(contenedor_scroll_ser, orient="vertical", command=lienzo_series.yview)
+area_series = tk.Frame(lienzo_series, bg="#110924")
+
+area_series.bind("<Configure>", lambda e: lienzo_series.configure(scrollregion=lienzo_series.bbox("all")))
+
+lienzo_series.create_window((0, 0), window=area_series, anchor="nw")
+lienzo_series.configure(yscrollcommand=barra_series.set)
+
+lienzo_series.pack(side="left", fill="both", expand=True)
+barra_series.pack(side="right", fill="y")
+
+def hacer_scroll_series(evento):
+    lienzo_series.yview_scroll(int(-1*(evento.delta/120)), "units")
+
+contenedor_scroll_ser.bind("<Enter>", lambda e: lienzo_series.bind_all("<MouseWheel>", hacer_scroll_series))
+contenedor_scroll_ser.bind("<Leave>", lambda e: lienzo_series.unbind_all("<MouseWheel>"))
+
+
+#                   FRAME FAVORITOS (CON SCROLL)
+pantalla_favoritos = tk.Frame(ventana_principal)
+
+fondo_favoritos = tk.Canvas(pantalla_favoritos, width=1000, height=600, highlightthickness=0)
+fondo_favoritos.pack(fill="both", expand=True)
+hacer_degradado(fondo_favoritos, "#110924", "#2a1357", 1000, 600)
+
+barra_sup_fav = tk.Frame(fondo_favoritos, bg="#110924", height=80)
+fondo_favoritos.create_window(0, 0, window=barra_sup_fav, anchor="nw", width=1000)
+
+tk.Button(
+    barra_sup_fav,
+    text="← Volver",
+    font=("Arial", 11),
+    bg="#5a3d8a",
+    fg="white",
+    bd=0,
+    cursor="hand2",
+    padx=15,
+    pady=6,
+    command=lambda: cambiar_pantalla("menu")
+).place(x=30, y=15)
+
+tk.Label(
+    barra_sup_fav,
+    text="Mis Favoritos",
+    font=("Segoe UI", 26, "bold"),
+    fg="white",
+    bg="#110924"
+).place(x=30, y=45)
+
+contenedor_scroll_fav = tk.Frame(fondo_favoritos, bg="#110924")
+fondo_favoritos.create_window(0, 80, window=contenedor_scroll_fav, anchor="nw", width=1000, height=520)
+
+lienzo_favoritos = tk.Canvas(contenedor_scroll_fav, bg="#110924", highlightthickness=0)
+barra_favoritos = ttk.Scrollbar(contenedor_scroll_fav, orient="vertical", command=lienzo_favoritos.yview)
+area_favoritos = tk.Frame(lienzo_favoritos, bg="#110924")
+
+area_favoritos.bind("<Configure>", lambda e: lienzo_favoritos.configure(scrollregion=lienzo_favoritos.bbox("all")))
+
+lienzo_favoritos.create_window((0, 0), window=area_favoritos, anchor="nw")
+lienzo_favoritos.configure(yscrollcommand=barra_favoritos.set)
+
+lienzo_favoritos.pack(side="left", fill="both", expand=True)
+barra_favoritos.pack(side="right", fill="y")
+
+def hacer_scroll_favoritos(evento):
+    lienzo_favoritos.yview_scroll(int(-1*(evento.delta/120)), "units")
+
+contenedor_scroll_fav.bind("<Enter>", lambda e: lienzo_favoritos.bind_all("<MouseWheel>", hacer_scroll_favoritos))
+contenedor_scroll_fav.bind("<Leave>", lambda e: lienzo_favoritos.unbind_all("<MouseWheel>"))
+
+
+#                   FRAME PERFIL (CON SCROLL)
+pantalla_perfil = tk.Frame(ventana_principal)
+
+fondo_perfil = tk.Canvas(pantalla_perfil, width=1000, height=600, highlightthickness=0)
+fondo_perfil.pack(fill="both", expand=True)
+hacer_degradado(fondo_perfil, "#110924", "#2a1357", 1000, 600)
+
+barra_sup_perfil = tk.Frame(fondo_perfil, bg="#110924", height=70)
+fondo_perfil.create_window(0, 0, window=barra_sup_perfil, anchor="nw", width=1000)
+
+tk.Button(
+    barra_sup_perfil,
+    text="← Volver",
+    font=("Arial", 11),
+    bg="#5a3d8a",
+    fg="white",
+    bd=0,
+    cursor="hand2",
+    padx=15,
+    pady=6,
+    command=lambda: cambiar_pantalla("menu")
+).place(x=30, y=15)
+
+tk.Label(
+    barra_sup_perfil,
+    text="Mi Perfil",
+    font=("Segoe UI", 26, "bold"),
+    fg="white",
+    bg="#110924"
+).place(x=30, y=30)
+
+contenedor_scroll_perfil = tk.Frame(fondo_perfil, bg="#110924")
+fondo_perfil.create_window(0, 70, window=contenedor_scroll_perfil, anchor="nw", width=1000, height=530)
+
+lienzo_perfil = tk.Canvas(contenedor_scroll_perfil, bg="#110924", highlightthickness=0)
+barra_perfil = ttk.Scrollbar(contenedor_scroll_perfil, orient="vertical", command=lienzo_perfil.yview)
+area_perfil = tk.Frame(lienzo_perfil, bg="#110924")
+
+area_perfil.bind("<Configure>", lambda e: lienzo_perfil.configure(scrollregion=lienzo_perfil.bbox("all")))
+
+lienzo_perfil.create_window((0, 0), window=area_perfil, anchor="nw")
+lienzo_perfil.configure(yscrollcommand=barra_perfil.set)
+
+lienzo_perfil.pack(side="left", fill="both", expand=True)
+barra_perfil.pack(side="right", fill="y")
+
+def hacer_scroll_perfil(evento):
+    lienzo_perfil.yview_scroll(int(-1*(evento.delta/120)), "units")
+
+contenedor_scroll_perfil.bind("<Enter>", lambda e: lienzo_perfil.bind_all("<MouseWheel>", hacer_scroll_perfil))
+contenedor_scroll_perfil.bind("<Leave>", lambda e: lienzo_perfil.unbind_all("<MouseWheel>"))
+
+
+#                   FUNCIONES CRUD
+
+def ventana_agregar_pelicula():
+    """Diálogo para agregar una nueva película"""
+    ventana_nueva = tk.Toplevel(ventana_principal)
+    ventana_nueva.title("Agregar Película")
+    ventana_nueva.geometry("420x520")
+    ventana_nueva.config(bg="#2a1357")
+    ventana_nueva.resizable(False, False)
+    ventana_nueva.transient(ventana_principal)
+    ventana_nueva.grab_set()
+    
+    tk.Label(ventana_nueva, text="Nueva Película", font=("Arial", 18, "bold"), fg="white", bg="#2a1357").pack(pady=15)
+    
+    tk.Label(ventana_nueva, text="Título:", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30)
+    input_titulo = tk.Entry(ventana_nueva, font=("Arial", 12), width=35)
+    input_titulo.pack(padx=30, pady=5)
+    
+    tk.Label(ventana_nueva, text="Año:", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30, pady=(10,0))
+    input_anio = tk.Entry(ventana_nueva, font=("Arial", 12), width=35)
+    input_anio.pack(padx=30, pady=5)
+    
+    tk.Label(ventana_nueva, text="Género:", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30, pady=(10,0))
+    input_genero = tk.Entry(ventana_nueva, font=("Arial", 12), width=35)
+    input_genero.pack(padx=30, pady=5)
+    
+    caja_checks = tk.Frame(ventana_nueva, bg="#2a1357")
+    caja_checks.pack(pady=15, padx=30, fill="x")
+    
+    check_vista = tk.BooleanVar()
+    tk.Checkbutton(caja_checks, text="Ya la vi", variable=check_vista, fg="white", bg="#2a1357", 
+                   selectcolor="#1a102c", font=("Arial", 10), activebackground="#2a1357", 
+                   activeforeground="white").pack(anchor="w", pady=3)
+    
+    check_favorita = tk.BooleanVar()
+    tk.Checkbutton(caja_checks, text="Es mi favorita", variable=check_favorita, fg="white", bg="#2a1357",
+                   selectcolor="#1a102c", font=("Arial", 10), activebackground="#2a1357",
+                   activeforeground="white").pack(anchor="w", pady=3)
+    
+    check_pendiente = tk.BooleanVar()
+    tk.Checkbutton(caja_checks, text="Pendiente por ver", variable=check_pendiente, fg="white", bg="#2a1357",
+                   selectcolor="#1a102c", font=("Arial", 10), activebackground="#2a1357",
+                   activeforeground="white").pack(anchor="w", pady=3)
+    
+    tk.Label(ventana_nueva, text="Calificación (0-10):", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30, pady=(10,0))
+    input_calificacion = tk.Entry(ventana_nueva, font=("Arial", 12), width=35)
+    input_calificacion.insert(0, "0")
+    input_calificacion.pack(padx=30, pady=5)
+    
+    def guardar_peli():
+        nombre_peli = input_titulo.get().strip()
+        if not nombre_peli:
+            messagebox.showwarning("Advertencia", "El título es obligatorio", parent=ventana_nueva)
+            return
+        
+        try:
+            calificacion = float(input_calificacion.get())
+            if calificacion < 0 or calificacion > 10:
+                calificacion = 0
+        except:
+            calificacion = 0
+        
+        peli_nueva = {
+            "titulo": nombre_peli,
+            "año": input_anio.get().strip() or "N/A",
+            "genero": input_genero.get().strip() or "Sin género",
+            "vista": check_vista.get(),
+            "favorita": check_favorita.get(),
+            "pendiente": check_pendiente.get(),
+            "calificacion": calificacion
+        }
+        
+        lista_peliculas.append(peli_nueva)
+        guardar_info()
+        mostrar_peliculas()
+        actualizar_stats_menu()
+        ventana_nueva.destroy()
+        messagebox.showinfo("Éxito", f"'{nombre_peli}' agregada correctamente")
+    
+    tk.Button(ventana_nueva, text="Guardar", font=("Arial", 12, "bold"), bg="#00ff88", fg="#1a102c",
+              bd=0, cursor="hand2", padx=30, pady=10, command=guardar_peli).pack(pady=20)
+
+
+def ventana_agregar_serie():
+    """Diálogo para agregar una nueva serie"""
+    ventana_nueva = tk.Toplevel(ventana_principal)
+    ventana_nueva.title("Agregar Serie")
+    ventana_nueva.geometry("420x560")
+    ventana_nueva.config(bg="#2a1357")
+    ventana_nueva.resizable(False, False)
+    ventana_nueva.transient(ventana_principal)
+    ventana_nueva.grab_set()
+    
+    tk.Label(ventana_nueva, text="Nueva Serie", font=("Arial", 18, "bold"), fg="white", bg="#2a1357").pack(pady=15)
+    
+    tk.Label(ventana_nueva, text="Título:", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30)
+    input_titulo = tk.Entry(ventana_nueva, font=("Arial", 12), width=35)
+    input_titulo.pack(padx=30, pady=5)
+    
+    tk.Label(ventana_nueva, text="Año:", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30, pady=(10,0))
+    input_anio = tk.Entry(ventana_nueva, font=("Arial", 12), width=35)
+    input_anio.pack(padx=30, pady=5)
+    
+    tk.Label(ventana_nueva, text="Temporadas:", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30, pady=(10,0))
+    input_temporadas = tk.Entry(ventana_nueva, font=("Arial", 12), width=35)
+    input_temporadas.pack(padx=30, pady=5)
+    
+    tk.Label(ventana_nueva, text="Género:", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30, pady=(10,0))
+    input_genero = tk.Entry(ventana_nueva, font=("Arial", 12), width=35)
+    input_genero.pack(padx=30, pady=5)
+    
+    caja_checks = tk.Frame(ventana_nueva, bg="#2a1357")
+    caja_checks.pack(pady=15, padx=30, fill="x")
+    
+    check_vista = tk.BooleanVar()
+    tk.Checkbutton(caja_checks, text="Ya la vi", variable=check_vista, fg="white", bg="#2a1357",
+                   selectcolor="#1a102c", font=("Arial", 10), activebackground="#2a1357",
+                   activeforeground="white").pack(anchor="w", pady=3)
+    
+    check_favorita = tk.BooleanVar()
+    tk.Checkbutton(caja_checks, text="Es mi favorita", variable=check_favorita, fg="white", bg="#2a1357",
+                   selectcolor="#1a102c", font=("Arial", 10), activebackground="#2a1357",
+                   activeforeground="white").pack(anchor="w", pady=3)
+    
+    check_pendiente = tk.BooleanVar()
+    tk.Checkbutton(caja_checks, text="Pendiente por ver", variable=check_pendiente, fg="white", bg="#2a1357",
+                   selectcolor="#1a102c", font=("Arial", 10), activebackground="#2a1357",
+                   activeforeground="white").pack(anchor="w", pady=3)
+    
+    tk.Label(ventana_nueva, text="Calificación (0-10):", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30, pady=(10,0))
+    input_calificacion = tk.Entry(ventana_nueva, font=("Arial", 12), width=35)
+    input_calificacion.insert(0, "0")
+    input_calificacion.pack(padx=30, pady=5)
+    
+    def guardar_serie():
+        nombre_serie = input_titulo.get().strip()
+        if not nombre_serie:
+            messagebox.showwarning("Advertencia", "El título es obligatorio", parent=ventana_nueva)
+            return
+        
+        try:
+            calificacion = float(input_calificacion.get())
+            if calificacion < 0 or calificacion > 10:
+                calificacion = 0
+        except:
+            calificacion = 0
+        
+        serie_nueva = {
+            "titulo": nombre_serie,
+            "año": input_anio.get().strip() or "N/A",
+            "temporadas": input_temporadas.get().strip() or "N/A",
+            "genero": input_genero.get().strip() or "Sin género",
+            "vista": check_vista.get(),
+            "favorita": check_favorita.get(),
+            "pendiente": check_pendiente.get(),
+            "calificacion": calificacion
+        }
+        
+        lista_series.append(serie_nueva)
+        guardar_info()
+        mostrar_series()
+        actualizar_stats_menu()
+        ventana_nueva.destroy()
+        messagebox.showinfo("Éxito", f"'{nombre_serie}' agregada correctamente")
+    
+    tk.Button(ventana_nueva, text="Guardar", font=("Arial", 12, "bold"), bg="#00ff88", fg="#1a102c",
+              bd=0, cursor="hand2", padx=30, pady=10, command=guardar_serie).pack(pady=20)
+
+
+def mostrar_peliculas():
+    """Actualiza la lista de películas en el frame"""
+    for widget in area_peliculas.winfo_children():
+        widget.destroy()
+    
+    if not lista_peliculas:
+        tk.Label(
+            area_peliculas,
+            text="No tienes películas agregadas.\nHaz clic en '+ Agregar Película' para empezar.",
+            font=("Arial", 14),
+            fg="#a89edb",
+            bg="#110924",
+            justify="center"
+        ).pack(pady=150)
+        return
+    
+    # Grid de películas
+    grilla_peliculas = tk.Frame(area_peliculas, bg="#110924")
+    grilla_peliculas.pack(padx=30, pady=20, fill="both", expand=True)
+    
+    paleta_colores = ["#2c3e50", "#16a085", "#34495e", "#e74c3c", "#c0392b", "#8e44ad", "#27ae60", "#f39c12"]
+    
+    for indice, peli in enumerate(lista_peliculas):
+        fila = indice // 3
+        columna = indice % 3
+        
+        tarjeta_peli = tk.Frame(grilla_peliculas, bg="#2a1357", bd=2, relief="solid", width=285, height=250)
+        tarjeta_peli.grid(row=fila, column=columna, padx=10, pady=10, sticky="nsew")
+        tarjeta_peli.pack_propagate(False)
+        
+        # Placeholder colorido
+        indice_color = indice % len(paleta_colores)
+        cuadro_color = tk.Frame(tarjeta_peli, bg=paleta_colores[indice_color], width=275, height=95)
+        cuadro_color.pack(padx=5, pady=5)
+        cuadro_color.pack_propagate(False)
+        
+        tk.Label(cuadro_color, text=peli["titulo"], font=("Arial", 11, "bold"), fg="white",
+                 bg=paleta_colores[indice_color], wraplength=260, justify="center").place(relx=0.5, rely=0.5, anchor="center")
+        
+        # Info
+        tk.Label(tarjeta_peli, text=f"{peli['año']} • {peli['genero']}", font=("Arial", 9),
+                 fg="#a89edb", bg="#2a1357").pack()
+        
+        # Calificación
+        texto_calif = f"⭐ {peli.get('calificacion', 0)}/10"
+        tk.Label(tarjeta_peli, text=texto_calif, font=("Arial", 10, "bold"),
+                 fg="#ffaa00", bg="#2a1357").pack(pady=3)
+        
+        # Estado
+        lista_estados = []
+        if peli.get("vista"): lista_estados.append("✓ Vista")
+        if peli.get("favorita"): lista_estados.append("★ Favorita")
+        if peli.get("pendiente"): lista_estados.append("⏰ Pendiente")
+        
+        texto_estado = " | ".join(lista_estados) if lista_estados else "Sin estado"
+        tk.Label(tarjeta_peli, text=texto_estado, font=("Arial", 8),
+                 fg="#00ff88", bg="#2a1357", wraplength=270).pack(pady=3)
+        
+        # Botones
+        caja_botones = tk.Frame(tarjeta_peli, bg="#2a1357")
+        caja_botones.pack(pady=8)
+        
+        tk.Button(caja_botones, text="✎ Editar", font=("Arial", 9), bg="#3498db", fg="white",
+                  width=8, bd=0, cursor="hand2",
+                  command=lambda idx=indice: ventana_editar_pelicula(idx)).grid(row=0, column=0, padx=3)
+        
+        tk.Button(caja_botones, text="🗑 Eliminar", font=("Arial", 9), bg="#e74c3c", fg="white",
+                  width=8, bd=0, cursor="hand2",
+                  command=lambda idx=indice: borrar_pelicula(idx)).grid(row=0, column=1, padx=3)
+    
+    tk.Label(area_peliculas, text="", bg="#110924", height=2).pack()
+
+
+def mostrar_series():
+    """Actualiza la lista de series en el frame"""
+    for widget in area_series.winfo_children():
+        widget.destroy()
+    
+    if not lista_series:
+        tk.Label(
+            area_series,
+            text="No tienes series agregadas.\nHaz clic en '+ Agregar Serie' para empezar.",
+            font=("Arial", 14),
+            fg="#a89edb",
+            bg="#110924",
+            justify="center"
+        ).pack(pady=150)
+        return
+    
+    grilla_series = tk.Frame(area_series, bg="#110924")
+    grilla_series.pack(padx=30, pady=20, fill="both", expand=True)
+    
+    paleta_colores = ["#27ae60", "#95a5a6", "#e67e22", "#3498db", "#34495e", "#9b59b6", "#1abc9c", "#e74c3c"]
+    
+    for indice, serie in enumerate(lista_series):
+        fila = indice // 3
+        columna = indice % 3
+        
+        tarjeta_serie = tk.Frame(grilla_series, bg="#2a1357", bd=2, relief="solid", width=285, height=250)
+        tarjeta_serie.grid(row=fila, column=columna, padx=10, pady=10, sticky="nsew")
+        tarjeta_serie.pack_propagate(False)
+        
+        indice_color = indice % len(paleta_colores)
+        cuadro_color = tk.Frame(tarjeta_serie, bg=paleta_colores[indice_color], width=275, height=95)
+        cuadro_color.pack(padx=5, pady=5)
+        cuadro_color.pack_propagate(False)
+        
+        tk.Label(cuadro_color, text=serie["titulo"], font=("Arial", 11, "bold"), fg="white",
+                 bg=paleta_colores[indice_color], wraplength=260, justify="center").place(relx=0.5, rely=0.5, anchor="center")
+        
+        tk.Label(tarjeta_serie, text=f"{serie.get('temporadas', 'N/A')} temp. • {serie['genero']}", 
+                 font=("Arial", 9), fg="#a89edb", bg="#2a1357").pack()
+        
+        texto_calif = f"⭐ {serie.get('calificacion', 0)}/10"
+        tk.Label(tarjeta_serie, text=texto_calif, font=("Arial", 10, "bold"),
+                 fg="#ffaa00", bg="#2a1357").pack(pady=3)
+        
+        lista_estados = []
+        if serie.get("vista"): lista_estados.append("✓ Vista")
+        if serie.get("favorita"): lista_estados.append("★ Favorita")
+        if serie.get("pendiente"): lista_estados.append("⏰ Pendiente")
+        
+        texto_estado = " | ".join(lista_estados) if lista_estados else "Sin estado"
+        tk.Label(tarjeta_serie, text=texto_estado, font=("Arial", 8),
+                 fg="#00ff88", bg="#2a1357", wraplength=270).pack(pady=3)
+        
+        caja_botones = tk.Frame(tarjeta_serie, bg="#2a1357")
+        caja_botones.pack(pady=8)
+        
+        tk.Button(caja_botones, text="✎ Editar", font=("Arial", 9), bg="#3498db", fg="white",
+                  width=8, bd=0, cursor="hand2",
+                  command=lambda idx=indice: ventana_editar_serie(idx)).grid(row=0, column=0, padx=3)
+        
+        tk.Button(caja_botones, text="🗑 Eliminar", font=("Arial", 9), bg="#e74c3c", fg="white",
+                  width=8, bd=0, cursor="hand2",
+                  command=lambda idx=indice: borrar_serie(idx)).grid(row=0, column=1, padx=3)
+    
+    tk.Label(area_series, text="", bg="#110924", height=2).pack()
+
+
+def ventana_editar_pelicula(posicion):
+    """Editar una película existente"""
+    peli = lista_peliculas[posicion]
+    
+    ventana_edicion = tk.Toplevel(ventana_principal)
+    ventana_edicion.title("Editar Película")
+    ventana_edicion.geometry("420x520")
+    ventana_edicion.config(bg="#2a1357")
+    ventana_edicion.resizable(False, False)
+    ventana_edicion.transient(ventana_principal)
+    ventana_edicion.grab_set()
+    
+    tk.Label(ventana_edicion, text="Editar Película", font=("Arial", 18, "bold"), fg="white", bg="#2a1357").pack(pady=15)
+    
+    tk.Label(ventana_edicion, text="Título:", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30)
+    input_titulo = tk.Entry(ventana_edicion, font=("Arial", 12), width=35)
+    input_titulo.insert(0, peli["titulo"])
+    input_titulo.pack(padx=30, pady=5)
+    
+    tk.Label(ventana_edicion, text="Año:", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30, pady=(10,0))
+    input_anio = tk.Entry(ventana_edicion, font=("Arial", 12), width=35)
+    input_anio.insert(0, peli["año"])
+    input_anio.pack(padx=30, pady=5)
+    
+    tk.Label(ventana_edicion, text="Género:", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30, pady=(10,0))
+    input_genero = tk.Entry(ventana_edicion, font=("Arial", 12), width=35)
+    input_genero.insert(0, peli["genero"])
+    input_genero.pack(padx=30, pady=5)
+    
+    caja_checks = tk.Frame(ventana_edicion, bg="#2a1357")
+    caja_checks.pack(pady=15, padx=30, fill="x")
+    
+    check_vista = tk.BooleanVar(value=peli.get("vista", False))
+    tk.Checkbutton(caja_checks, text="Ya la vi", variable=check_vista, fg="white", bg="#2a1357",
+                   selectcolor="#1a102c", font=("Arial", 10), activebackground="#2a1357",
+                   activeforeground="white").pack(anchor="w", pady=3)
+    
+    check_favorita = tk.BooleanVar(value=peli.get("favorita", False))
+    tk.Checkbutton(caja_checks, text="Es mi favorita", variable=check_favorita, fg="white", bg="#2a1357",
+                   selectcolor="#1a102c", font=("Arial", 10), activebackground="#2a1357",
+                   activeforeground="white").pack(anchor="w", pady=3)
+    
+    check_pendiente = tk.BooleanVar(value=peli.get("pendiente", False))
+    tk.Checkbutton(caja_checks, text="Pendiente por ver", variable=check_pendiente, fg="white", bg="#2a1357",
+                   selectcolor="#1a102c", font=("Arial", 10), activebackground="#2a1357",
+                   activeforeground="white").pack(anchor="w", pady=3)
+    
+    tk.Label(ventana_edicion, text="Calificación (0-10):", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30, pady=(10,0))
+    input_calificacion = tk.Entry(ventana_edicion, font=("Arial", 12), width=35)
+    input_calificacion.insert(0, str(peli.get("calificacion", 0)))
+    input_calificacion.pack(padx=30, pady=5)
+    
+    def aplicar_cambios():
+        try:
+            calificacion = float(input_calificacion.get())
+            if calificacion < 0 or calificacion > 10:
+                calificacion = 0
+        except:
+            calificacion = 0
+        
+        lista_peliculas[posicion] = {
+            "titulo": input_titulo.get().strip() or peli["titulo"],
+            "año": input_anio.get().strip() or "N/A",
+            "genero": input_genero.get().strip() or "Sin género",
+            "vista": check_vista.get(),
+            "favorita": check_favorita.get(),
+            "pendiente": check_pendiente.get(),
+            "calificacion": calificacion
+        }
+        
+        guardar_info()
+        mostrar_peliculas()
+        actualizar_stats_menu()
+        mostrar_favoritos()
+        ventana_edicion.destroy()
+    
+    tk.Button(ventana_edicion, text="Guardar Cambios", font=("Arial", 12, "bold"), bg="#00ff88", fg="#1a102c",
+              bd=0, cursor="hand2", padx=30, pady=10, command=aplicar_cambios).pack(pady=20)
+
+
+def ventana_editar_serie(posicion):
+    """Editar una serie existente"""
+    serie = lista_series[posicion]
+    
+    ventana_edicion = tk.Toplevel(ventana_principal)
+    ventana_edicion.title("Editar Serie")
+    ventana_edicion.geometry("420x560")
+    ventana_edicion.config(bg="#2a1357")
+    ventana_edicion.resizable(False, False)
+    ventana_edicion.transient(ventana_principal)
+    ventana_edicion.grab_set()
+    
+    tk.Label(ventana_edicion, text="Editar Serie", font=("Arial", 18, "bold"), fg="white", bg="#2a1357").pack(pady=15)
+    
+    tk.Label(ventana_edicion, text="Título:", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30)
+    input_titulo = tk.Entry(ventana_edicion, font=("Arial", 12), width=35)
+    input_titulo.insert(0, serie["titulo"])
+    input_titulo.pack(padx=30, pady=5)
+    
+    tk.Label(ventana_edicion, text="Año:", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30, pady=(10,0))
+    input_anio = tk.Entry(ventana_edicion, font=("Arial", 12), width=35)
+    input_anio.insert(0, serie["año"])
+    input_anio.pack(padx=30, pady=5)
+    
+    tk.Label(ventana_edicion, text="Temporadas:", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30, pady=(10,0))
+    input_temporadas = tk.Entry(ventana_edicion, font=("Arial", 12), width=35)
+    input_temporadas.insert(0, serie.get("temporadas", "N/A"))
+    input_temporadas.pack(padx=30, pady=5)
+    
+    tk.Label(ventana_edicion, text="Género:", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30, pady=(10,0))
+    input_genero = tk.Entry(ventana_edicion, font=("Arial", 12), width=35)
+    input_genero.insert(0, serie["genero"])
+    input_genero.pack(padx=30, pady=5)
+    
+    caja_checks = tk.Frame(ventana_edicion, bg="#2a1357")
+    caja_checks.pack(pady=15, padx=30, fill="x")
+    
+    check_vista = tk.BooleanVar(value=serie.get("vista", False))
+    tk.Checkbutton(caja_checks, text="Ya la vi", variable=check_vista, fg="white", bg="#2a1357",
+                   selectcolor="#1a102c", font=("Arial", 10), activebackground="#2a1357",
+                   activeforeground="white").pack(anchor="w", pady=3)
+    
+    check_favorita = tk.BooleanVar(value=serie.get("favorita", False))
+    tk.Checkbutton(caja_checks, text="Es mi favorita", variable=check_favorita, fg="white", bg="#2a1357",
+                   selectcolor="#1a102c", font=("Arial", 10), activebackground="#2a1357",
+                   activeforeground="white").pack(anchor="w", pady=3)
+    
+    check_pendiente = tk.BooleanVar(value=serie.get("pendiente", False))
+    tk.Checkbutton(caja_checks, text="Pendiente por ver", variable=check_pendiente, fg="white", bg="#2a1357",
+                   selectcolor="#1a102c", font=("Arial", 10), activebackground="#2a1357",
+                   activeforeground="white").pack(anchor="w", pady=3)
+    
+    tk.Label(ventana_edicion, text="Calificación (0-10):", fg="white", bg="#2a1357", font=("Arial", 11)).pack(anchor="w", padx=30, pady=(10,0))
+    input_calificacion = tk.Entry(ventana_edicion, font=("Arial", 12), width=35)
+    input_calificacion.insert(0, str(serie.get("calificacion", 0)))
+    input_calificacion.pack(padx=30, pady=5)
+    
+    def aplicar_cambios():
+        try:
+            calificacion = float(input_calificacion.get())
+            if calificacion < 0 or calificacion > 10:
+                calificacion = 0
+        except:
+            calificacion = 0
+        
+        lista_series[posicion] = {
+            "titulo": input_titulo.get().strip() or serie["titulo"],
+            "año": input_anio.get().strip() or "N/A",
+            "temporadas": input_temporadas.get().strip() or "N/A",
+            "genero": input_genero.get().strip() or "Sin género",
+            "vista": check_vista.get(),
+            "favorita": check_favorita.get(),
+            "pendiente": check_pendiente.get(),
+            "calificacion": calificacion
+        }
+        
+        guardar_info()
+        mostrar_series()
+        actualizar_stats_menu()
+        mostrar_favoritos()
+        ventana_edicion.destroy()
+    
+    tk.Button(ventana_edicion, text="Guardar Cambios", font=("Arial", 12, "bold"), bg="#00ff88", fg="#1a102c",
+              bd=0, cursor="hand2", padx=30, pady=10, command=aplicar_cambios).pack(pady=20)
+
+
+def borrar_pelicula(posicion):
+    """Eliminar una película"""
+    peli = lista_peliculas[posicion]
+    confirmacion = messagebox.askyesno("Confirmar", f"¿Eliminar '{peli['titulo']}'?")
+    
+    if confirmacion:
+        lista_peliculas.pop(posicion)
+        guardar_info()
+        mostrar_peliculas()
+        actualizar_stats_menu()
+        mostrar_favoritos()
+        messagebox.showinfo("Éxito", "Película eliminada")
+
+
+def borrar_serie(posicion):
+    """Eliminar una serie"""
+    serie = lista_series[posicion]
+    confirmacion = messagebox.askyesno("Confirmar", f"¿Eliminar '{serie['titulo']}'?")
+    
+    if confirmacion:
+        lista_series.pop(posicion)
+        guardar_info()
+        mostrar_series()
+        actualizar_stats_menu()
+        mostrar_favoritos()
+        messagebox.showinfo("Éxito", "Serie eliminada")
+
+
+def mostrar_favoritos():
+    """Actualiza la lista de favoritos"""
+    for widget in area_favoritos.winfo_children():
+        widget.destroy()
+    
+    items_favoritos = []
+    for peli in lista_peliculas:
+        if peli.get("favorita"):
+            items_favoritos.append({**peli, "tipo": "Película"})
+    
+    for serie in lista_series:
+        if serie.get("favorita"):
+            items_favoritos.append({**serie, "tipo": "Serie"})
+    
+    if not items_favoritos:
+        tk.Label(
+            area_favoritos,
+            text="No tienes favoritos aún.\nMarca películas o series como favoritas.",
+            font=("Arial", 14),
+            fg="#a89edb",
+            bg="#110924",
+            justify="center"
+        ).pack(pady=150)
+        return
+    
+    grilla_favoritos = tk.Frame(area_favoritos, bg="#110924")
+    grilla_favoritos.pack(padx=30, pady=20, fill="both", expand=True)
+    
+    paleta_colores = ["#16a085", "#2c3e50", "#8e44ad", "#e74c3c", "#27ae60", "#f39c12", "#3498db", "#c0392b"]
+    
+    for indice, item in enumerate(items_favoritos):
+        fila = indice // 3
+        columna = indice % 3
+        
+        tarjeta_fav = tk.Frame(grilla_favoritos, bg="#2a1357", bd=2, relief="solid", width=285, height=230)
+        tarjeta_fav.grid(row=fila, column=columna, padx=10, pady=10, sticky="nsew")
+        tarjeta_fav.pack_propagate(False)
+        
+        indice_color = indice % len(paleta_colores)
+        cuadro_color = tk.Frame(tarjeta_fav, bg=paleta_colores[indice_color], width=275, height=100)
+        cuadro_color.pack(padx=5, pady=5)
+        cuadro_color.pack_propagate(False)
+        
+        tk.Label(cuadro_color, text=item["titulo"], font=("Arial", 11, "bold"), fg="white",
+                 bg=paleta_colores[indice_color], wraplength=260, justify="center").place(relx=0.5, rely=0.5, anchor="center")
+        
+        info_tipo = item["tipo"]
+        if item["tipo"] == "Serie":
+            info_tipo += f" • {item.get('temporadas', 'N/A')} temp."
+        
+        tk.Label(tarjeta_fav, text=f"{info_tipo} • {item['año']}", font=("Arial", 9),
+                 fg="#a89edb", bg="#2a1357").pack(pady=3)
+        
+        texto_calif = f"⭐ {item.get('calificacion', 0)}/10"
+        tk.Label(tarjeta_fav, text=texto_calif, font=("Arial", 10, "bold"),
+                 fg="#ffaa00", bg="#2a1357").pack(pady=3)
+        
+        tk.Label(tarjeta_fav, text="★ FAVORITO", font=("Arial", 11, "bold"),
+                 fg="#ffaa00", bg="#2a1357").pack(pady=3)
+    
+    tk.Label(area_favoritos, text="", bg="#110924", height=2).pack()
+
+
+def mostrar_perfil():
+    """Actualiza el perfil del usuario"""
+    for widget in area_perfil.winfo_children():
+        widget.destroy()
+    
+    tk.Label(area_perfil, text="", bg="#110924", height=1).pack()
+    
+    # Info usuario
+    caja_info_usuario = tk.Frame(area_perfil, bg="#2a1357", bd=2, relief="groove")
+    caja_info_usuario.pack(pady=15, padx=80, fill="x")
+    
+    contenedor_foto = tk.Frame(caja_info_usuario, bg="#4a90e2", width=120, height=120)
+    contenedor_foto.pack(pady=(15, 10))
+    contenedor_foto.pack_propagate(False)
+    
+    etiqueta_foto = tk.Label(contenedor_foto, text="", font=("Arial", 40, "bold"), fg="white", bg="#4a90e2")
+    etiqueta_foto.place(relx=0.5, rely=0.5, anchor="center")
+    
+    if foto_perfil_tk:
+        etiqueta_foto.config(image=foto_perfil_tk, bg="white", text="")
+        etiqueta_foto.image = foto_perfil_tk
+    else:
+        letras = "".join([n[0].upper() for n in datos_usuario["nombre"].split()[:2]]) if datos_usuario["nombre"] else "U"
+        etiqueta_foto.config(text=letras)
+    
+    tk.Label(caja_info_usuario, text=datos_usuario["nombre"], font=("Arial", 18, "bold"),
+             fg="white", bg="#2a1357").pack(pady=5)
+    
+    tk.Label(caja_info_usuario, text=f"@{datos_usuario['usuario']}", font=("Arial", 12),
+             fg="#a89edb", bg="#2a1357").pack(pady=(0, 15))
+    
+    # Estadísticas
+    tk.Label(area_perfil, text="Estadísticas", font=("Segoe UI", 20, "bold"),
+             fg="white", bg="#110924").pack(pady=(20, 10))
+    
+    caja_stats_perfil = tk.Frame(area_perfil, bg="#110924")
+    caja_stats_perfil.pack(pady=10)
+    
+    pelis_vistas = sum(1 for p in lista_peliculas if p.get("vista"))
+    pelis_pendientes = sum(1 for p in lista_peliculas if p.get("pendiente"))
+    series_vistas = sum(1 for s in lista_series if s.get("vista"))
+    series_pendientes = sum(1 for s in lista_series if s.get("pendiente"))
+    total_favs = sum(1 for p in lista_peliculas if p.get("favorita")) + sum(1 for s in lista_series if s.get("favorita"))
+    
+    def crear_cuadro_stat_perfil(padre, titulo_stat, numero, color_fondo, columna):
+        cuadro = tk.Frame(padre, bg=color_fondo, width=170, height=100, bd=2, relief="solid")
+        cuadro.grid(row=0, column=columna, padx=8, pady=5)
+        cuadro.pack_propagate(False)
+        
+        tk.Label(cuadro, text=str(numero), font=("Arial", 28, "bold"), fg="white", bg=color_fondo).pack(pady=(15, 5))
+        tk.Label(cuadro, text=titulo_stat, font=("Arial", 9), fg="white", bg=color_fondo).pack()
+    
+    crear_cuadro_stat_perfil(caja_stats_perfil, "Películas\nVistas", pelis_vistas, "#16a085", 0)
+    crear_cuadro_stat_perfil(caja_stats_perfil, "Series\nVistas", series_vistas, "#2c3e50", 1)
+    crear_cuadro_stat_perfil(caja_stats_perfil, "Favoritos", total_favs, "#8e44ad", 2)
+    crear_cuadro_stat_perfil(caja_stats_perfil, "Pendientes", pelis_pendientes + series_pendientes, "#e74c3c", 3)
+    
+    # Películas mejor calificadas
+    tk.Label(area_perfil, text="Películas Mejor Calificadas", font=("Arial", 18, "bold"),
+             fg="white", bg="#110924").pack(pady=(25, 10))
+    
+    pelis_ordenadas = sorted([p for p in lista_peliculas if p.get("calificacion", 0) > 0],
+                             key=lambda x: x.get("calificacion", 0), reverse=True)[:5]
+    
+    if pelis_ordenadas:
+        caja_top_pelis = tk.Frame(area_perfil, bg="#2a1357", bd=2, relief="groove")
+        caja_top_pelis.pack(pady=10, padx=80, fill="x")
+        
+        for peli in pelis_ordenadas:
+            tk.Label(caja_top_pelis, 
+                     text=f"⭐ {peli.get('calificacion', 0)}/10 - {peli['titulo']}",
+                     font=("Arial", 11), fg="white", bg="#2a1357",
+                     anchor="w").pack(fill="x", padx=15, pady=5)
+    else:
+        tk.Label(area_perfil, text="Aún no has calificado películas",
+                 font=("Arial", 11), fg="#a89edb", bg="#110924").pack()
+    
+    # Series mejor calificadas
+    tk.Label(area_perfil, text="Series Mejor Calificadas", font=("Arial", 18, "bold"),
+             fg="white", bg="#110924").pack(pady=(25, 10))
+    
+    series_ordenadas = sorted([s for s in lista_series if s.get("calificacion", 0) > 0],
+                          key=lambda x: x.get("calificacion", 0), reverse=True)[:5]
+    
+    if series_ordenadas:
+        caja_top_series = tk.Frame(area_perfil, bg="#2a1357", bd=2, relief="groove")
+        caja_top_series.pack(pady=10, padx=80, fill="x")
+        
+        for serie in series_ordenadas:
+            tk.Label(caja_top_series,
+                     text=f"⭐ {serie.get('calificacion', 0)}/10 - {serie['titulo']}",
+                     font=("Arial", 11), fg="white", bg="#2a1357",
+                     anchor="w").pack(fill="x", padx=15, pady=5)
+    else:
+        tk.Label(area_perfil, text="Aún no has calificado series",
+                 font=("Arial", 11), fg="#a89edb", bg="#110924").pack()
+    
+    tk.Label(area_perfil, text="", bg="#110924", height=3).pack()
+
+
+def refrescar_todo():
+    """Actualiza todos los elementos de la interfaz"""
+    texto_nombre_usuario.config(text=datos_usuario["nombre"])
+    actualizar_stats_menu()
+    mostrar_peliculas()
+    mostrar_series()
+    mostrar_favoritos()
+
+
+def actualizar_stats_menu():
+    """Actualiza las estadísticas del menú principal"""
+    cantidad_pelis = len(lista_peliculas)
+    cantidad_series = len(lista_series)
+    cantidad_favs = sum(1 for p in lista_peliculas if p.get("favorita")) + sum(1 for s in lista_series if s.get("favorita"))
+    
+    # Limpiar stats anteriores
+    for widget in caja_estadisticas.winfo_children():
+        widget.destroy()
+    
+    crear_cuadro_stat(caja_estadisticas, "Películas", cantidad_pelis, 0)
+    crear_cuadro_stat(caja_estadisticas, "Series", cantidad_series, 1)
+    crear_cuadro_stat(caja_estadisticas, "Favoritos", cantidad_favs, 2)
+
+
+#               CONTROL DE FRAMES
+todas_pantallas = {
+    "logo": pantalla_logo,
+    "login": pantalla_login,
+    "registro": pantalla_registro,
+    "menu": pantalla_menu,
+    "perfil": pantalla_perfil,
+    "peliculas": pantalla_peliculas,
+    "series": pantalla_series,
+    "favoritos": pantalla_favoritos
+}
+
+def cambiar_pantalla(nombre_pantalla):
+    for pantalla in todas_pantallas.values():
+        pantalla.pack_forget()
+    todas_pantallas[nombre_pantalla].pack(fill="both", expand=True)
+
+def iniciar_sesion():
+    if campo_usuario.get() == user_correcto and campo_password.get() == password_correcta:
+        cargar_info()
+        refrescar_todo()
+        cambiar_pantalla("menu")
+    else:
+        mensaje_error.config(text="Usuario o contraseña incorrecta")
+
+
+#                CAMBIO DE LOGO (SPLASH)
+def ir_a_login():
+    cambiar_pantalla("login")
+
+ventana_principal.after(3000, ir_a_login)
+
+ventana_principal.mainloop()
